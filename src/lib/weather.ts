@@ -4,38 +4,52 @@ const BASE_URL_WEATHER = "https://api.open-meteo.com/v1/forecast";
 const BASE_URL_AIR = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
 export async function getWeatherData(lat: number, lon: number): Promise<WeatherData> {
-  // Construimos las URLs con los parámetros que pide tu esquema
-  const weatherUrl = `${BASE_URL_WEATHER}?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,is_day,precipitation,snowfall,weather_code,wind_speed_10m&daily=uv_index_max&timezone=auto`;
-  
-  const airUrl = `${BASE_URL_AIR}?latitude=${lat}&longitude=${lon}&current=birch_pollen,grass_pollen&timezone=auto`;
+  const weatherUrl = new URL(BASE_URL_WEATHER);
+  weatherUrl.searchParams.set("latitude", String(lat));
+  weatherUrl.searchParams.set("longitude", String(lon));
+  weatherUrl.searchParams.set(
+    "current",
+    "temperature_2m,apparent_temperature,is_day,precipitation,snowfall,weather_code,wind_speed_10m,uv_index"
+  );
+  weatherUrl.searchParams.set("daily", "uv_index_max");
+  weatherUrl.searchParams.set("forecast_days", "7");
+  weatherUrl.searchParams.set("timezone", "auto");
+
+  const airUrl = new URL(BASE_URL_AIR);
+  airUrl.searchParams.set("latitude", String(lat));
+  airUrl.searchParams.set("longitude", String(lon));
+  airUrl.searchParams.set("current", "birch_pollen,grass_pollen");
+  airUrl.searchParams.set("timezone", "auto");
 
   try {
-    // Disparamos ambas peticiones a la vez (Performance ++)
     const [weatherRes, airRes] = await Promise.all([
-      fetch(weatherUrl),
-      fetch(airUrl)
+      fetch(weatherUrl.toString()),
+      fetch(airUrl.toString()),
     ]);
 
-    if (!weatherRes.ok || !airRes.ok) throw new Error("Error al obtener datos del servidor");
+    if (!weatherRes.ok) {
+      throw new Error(`Weather API error: ${weatherRes.status}`);
+    }
+
+    if (!airRes.ok) {
+      throw new Error(`Air quality API error: ${airRes.status}`);
+    }
 
     const weatherData = await weatherRes.json();
     const airData = await airRes.json();
 
-    // Combinamos los datos en un solo objeto que encaje con nuestro Zod
     const combinedData = {
       ...weatherData,
-      daily: {
-        ...weatherData.daily,
-        birch_pollen: [airData.current.birch_pollen],
-        grass_pollen: [airData.current.grass_pollen],
-      }
+      current: {
+        ...weatherData.current,
+        birch_pollen: airData?.current?.birch_pollen ?? 0,
+        grass_pollen: airData?.current?.grass_pollen ?? 0,
+      },
     };
 
-    // Validamos con Zod. Si la API manda basura, aquí saltará el error.
     return weatherSchema.parse(combinedData);
-    
   } catch (error) {
     console.error("Fallo en HuronCast Engine:", error);
-    throw new Error("No pudimos conectar con el satélite del Hurón.");
+    throw new Error("No pudimos conectar con el clima del hurón.");
   }
 }

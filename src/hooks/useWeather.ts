@@ -1,49 +1,49 @@
-import { useState, useEffect } from 'react';
-// Usamos rutas relativas para saltarnos cualquier error de configuración del alias @
-import { getWeatherData } from '../lib/weather';
-import { getHuronAdvice, type HuronResponse } from '../lib/engine';
+import { useState } from "react";
+import { getWeatherData } from "../lib/weather";
+import { getHuronAdvice, type HuronResponse } from "../lib/engine";
+
+type ForecastRequest = {
+  date: string;
+  time?: string;
+};
+
+function getPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000,
+    });
+  });
+}
 
 export function useWeather() {
   const [data, setData] = useState<HuronResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && !navigator.geolocation) {
-      setError("Tu navegador no soporta geolocalización, bro.");
+  const runForecast = async ({ date, time }: ForecastRequest) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!navigator.geolocation) {
+        throw new Error("Tu navegador no soporta geolocalización.");
+      }
+
+      const position = await getPosition();
+      const { latitude, longitude } = position.coords;
+
+      const weatherRaw = await getWeatherData(latitude, longitude);
+      const advice = getHuronAdvice(weatherRaw);
+
+      setData(advice);
+    } catch (err) {
+      setError("No pudimos calcular el clima.");
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    const fetchHuronData = async () => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            const weatherRaw = await getWeatherData(latitude, longitude);
-            const advice = getHuronAdvice(weatherRaw);
-            
-            setData(advice);
-            setError(null);
-          } catch (err) {
-            setError("No pude conectar con el satélite del Hurón.");
-          } finally {
-            setLoading(false);
-          }
-        },
-        (geoError) => {
-          const msg = geoError.code === 1 
-            ? "Dame permiso para el GPS, si no, el hurón no sabe dónde estás." 
-            : "Error obteniendo ubicación.";
-          setError(msg);
-          setLoading(false);
-        },
-        { timeout: 10000 }
-      );
-    };
-
-    fetchHuronData();
-  }, []);
-
-  return { data, loading, error };
+  return { data, loading, error, runForecast };
 }
