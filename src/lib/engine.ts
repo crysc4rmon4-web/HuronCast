@@ -21,6 +21,7 @@ export interface HuronResponse {
   precipitation: number;
   snowfall: number;
   pollen: number;
+  selectionLabel?: string;
 }
 
 function extractNumber(val: number | number[] | undefined | null): number {

@@ -9,11 +9,7 @@ type ForecastRequest = {
 
 function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000,
-    });
+    navigator.geolocation.getCurrentPosition(resolve, reject);
   });
 }
 
@@ -27,19 +23,26 @@ export function useWeather() {
     setError(null);
 
     try {
-      if (!navigator.geolocation) {
-        throw new Error("Tu navegador no soporta geolocalización.");
-      }
-
       const position = await getPosition();
       const { latitude, longitude } = position.coords;
 
-      const weatherRaw = await getWeatherData(latitude, longitude);
+      const weatherRaw = await getWeatherData(
+        latitude,
+        longitude,
+        date,
+        time
+      );
+
       const advice = getHuronAdvice(weatherRaw);
 
-      setData(advice);
+      setData({
+        ...advice,
+        selectionLabel: time
+          ? `${date} • ${time}`
+          : `${date} • día completo`,
+      });
     } catch (err) {
-      setError("No pudimos calcular el clima.");
+      setError("No pudimos obtener el clima.");
     } finally {
       setLoading(false);
     }

@@ -1,55 +1,67 @@
 import { weatherSchema, type WeatherData } from "./schemas";
 
-const BASE_URL_WEATHER = "https://api.open-meteo.com/v1/forecast";
-const BASE_URL_AIR = "https://air-quality-api.open-meteo.com/v1/air-quality";
+const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
-export async function getWeatherData(lat: number, lon: number): Promise<WeatherData> {
-  const weatherUrl = new URL(BASE_URL_WEATHER);
-  weatherUrl.searchParams.set("latitude", String(lat));
-  weatherUrl.searchParams.set("longitude", String(lon));
-  weatherUrl.searchParams.set(
-    "current",
-    "temperature_2m,apparent_temperature,is_day,precipitation,snowfall,weather_code,wind_speed_10m,uv_index"
-  );
-  weatherUrl.searchParams.set("daily", "uv_index_max");
-  weatherUrl.searchParams.set("forecast_days", "7");
-  weatherUrl.searchParams.set("timezone", "auto");
+function findClosestIndex(times: string[], target: string) {
+  const targetTime = new Date(target).getTime();
 
-  const airUrl = new URL(BASE_URL_AIR);
-  airUrl.searchParams.set("latitude", String(lat));
-  airUrl.searchParams.set("longitude", String(lon));
-  airUrl.searchParams.set("current", "birch_pollen,grass_pollen");
-  airUrl.searchParams.set("timezone", "auto");
+  let closestIndex = 0;
+  let smallestDiff = Infinity;
+
+  times.forEach((time, i) => {
+    const current = new Date(time).getTime();
+    const diff = Math.abs(current - targetTime);
+
+    if (diff < smallestDiff) {
+      smallestDiff = diff;
+      closestIndex = i;
+    }
+  });
+
+  return closestIndex;
+}
+
+export async function getWeatherData(
+  lat: number,
+  lon: number,
+  date: string,
+  time?: string
+): Promise<WeatherData> {
+  const selectedTime = `${date}T${time || "12:00"}`;
+
+  const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,precipitation,snowfall,weather_code,wind_speed_10m,uv_index&daily=uv_index_max&forecast_days=16&timezone=auto`;
 
   try {
-    const [weatherRes, airRes] = await Promise.all([
-      fetch(weatherUrl.toString()),
-      fetch(airUrl.toString()),
-    ]);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Error al obtener clima");
 
-    if (!weatherRes.ok) {
-      throw new Error(`Weather API error: ${weatherRes.status}`);
-    }
+    const data = await res.json();
 
-    if (!airRes.ok) {
-      throw new Error(`Air quality API error: ${airRes.status}`);
-    }
+    const index = findClosestIndex(data.hourly.time, selectedTime);
 
-    const weatherData = await weatherRes.json();
-    const airData = await airRes.json();
+    const current = {
+      temperature_2m: data.hourly.temperature_2m[index],
+      apparent_temperature: data.hourly.apparent_temperature[index],
+      is_day: 1,
+      precipitation: data.hourly.precipitation[index],
+      snowfall: data.hourly.snowfall[index],
+      weather_code: data.hourly.weather_code[index],
+      wind_speed_10m: data.hourly.wind_speed_10m[index],
+      uv_index: data.hourly.uv_index[index],
+      birch_pollen: 0,
+      grass_pollen: 0,
+    };
 
-    const combinedData = {
-      ...weatherData,
-      current: {
-        ...weatherData.current,
-        birch_pollen: airData?.current?.birch_pollen ?? 0,
-        grass_pollen: airData?.current?.grass_pollen ?? 0,
+    const combined = {
+      current,
+      daily: {
+        uv_index_max: data.daily.uv_index_max || [],
       },
     };
 
-    return weatherSchema.parse(combinedData);
+    return weatherSchema.parse(combined);
   } catch (error) {
-    console.error("Fallo en HuronCast Engine:", error);
-    throw new Error("No pudimos conectar con el clima del hurón.");
+    console.error(error);
+    throw new Error("Error obteniendo clima del hurón");
   }
 }
