@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarDays, Clock3, Sparkles, MapPin } from "lucide-react";
 import { useWeather } from "../hooks/useWeather";
 import HuronDisplay from "./HuronDisplay";
+import { searchCity, type CityResult } from "../lib/geocoding";
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -24,15 +25,34 @@ export default function WeatherPlanner() {
   const today = useMemo(() => new Date(), []);
   const [date, setDate] = useState(toDateInputValue(today));
   const [time, setTime] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [results, setResults] = useState<CityResult[]>([]);
+  const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
 
   const minDate = useMemo(() => toDateInputValue(new Date()), []);
   const maxDate = useMemo(() => toDateInputValue(addDays(new Date(), 16)), []);
 
+  async function handleCitySearch(value: string) {
+    setCityQuery(value);
+    setSelectedCity(null);
+
+    if (value.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const res = await searchCity(value);
+    setResults(res);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     await runForecast({
       date,
       time: time.trim() ? time : undefined,
+      lat: selectedCity?.latitude,
+      lon: selectedCity?.longitude,
     });
   }
 
@@ -48,7 +68,7 @@ export default function WeatherPlanner() {
             ¿Qué me pongo hoy?
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-blue-100/75 sm:text-base">
-            Elige fecha y, si quieres, hora. El hurón te devuelve una recomendación clara, divertida y basada en clima real.
+            Elige fecha, hora y ciudad. El hurón te devuelve una recomendación clara, divertida y basada en clima real.
           </p>
         </header>
 
@@ -102,11 +122,44 @@ export default function WeatherPlanner() {
                 </label>
               </div>
 
+              <div className="space-y-2">
+                <span className="block text-sm font-semibold text-white/85">
+                  Ciudad (opcional)
+                </span>
+
+                <input
+                  type="text"
+                  placeholder="Ej: Madrid"
+                  value={cityQuery}
+                  onChange={(e) => handleCitySearch(e.target.value)}
+                  className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                />
+
+                {results.length > 0 && (
+                  <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60">
+                    {results.map((c) => (
+                      <button
+                        key={`${c.name}-${c.latitude}-${c.longitude}`}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCity(c);
+                          setCityQuery(`${c.name}, ${c.country}`);
+                          setResults([]);
+                        }}
+                        className="w-full border-b border-white/5 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/10 last:border-b-0"
+                      >
+                        {c.name}, {c.country}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm text-white/75">
                 <div className="flex items-start gap-3">
                   <MapPin size={16} className="mt-0.5 shrink-0 text-white/70" />
                   <p>
-                    Usamos tu ubicación del navegador para calcular el clima donde estás. No hace falta escribir la ciudad.
+                    Si no eliges ciudad, usamos tu ubicación del navegador. Si eliges una ciudad, el hurón trabaja con esa referencia.
                   </p>
                 </div>
               </div>
@@ -126,7 +179,9 @@ export default function WeatherPlanner() {
             {loading && (
               <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-[2rem] border border-white/15 bg-white/10 p-10 text-center shadow-2xl backdrop-blur-lg">
                 <span className="mb-4 text-7xl">🦦</span>
-                <h3 className="text-2xl font-black">El hurón está analizando el clima...</h3>
+                <h3 className="text-2xl font-black">
+                  El hurón está analizando el clima...
+                </h3>
                 <p className="mt-2 text-sm text-white/70">
                   Mirando temperatura, viento, lluvia y todo lo que hace falta para salir bien vestido.
                 </p>

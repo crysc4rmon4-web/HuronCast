@@ -5,6 +5,8 @@ import { getHuronAdvice, type HuronResponse } from "../lib/engine";
 type ForecastRequest = {
   date: string;
   time?: string;
+  lat?: number;
+  lon?: number;
 };
 
 function getPosition(): Promise<GeolocationPosition> {
@@ -18,35 +20,42 @@ export function useWeather() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const runForecast = async ({ date, time }: ForecastRequest) => {
-    setLoading(true);
-    setError(null);
+  const runForecast = async ({ date, time, lat, lon }: ForecastRequest) => {
+  setLoading(true);
+  setError(null);
 
-    try {
+  try {
+    let latitude = lat;
+    let longitude = lon;
+
+    // fallback GPS si no hay ciudad
+    if (!latitude || !longitude) {
       const position = await getPosition();
-      const { latitude, longitude } = position.coords;
-
-      const weatherRaw = await getWeatherData(
-        latitude,
-        longitude,
-        date,
-        time
-      );
-
-      const advice = getHuronAdvice(weatherRaw);
-
-      setData({
-        ...advice,
-        selectionLabel: time
-          ? `${date} • ${time}`
-          : `${date} • día completo`,
-      });
-    } catch (err) {
-      setError("No pudimos obtener el clima.");
-    } finally {
-      setLoading(false);
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
     }
-  };
+
+    const weatherRaw = await getWeatherData(
+      latitude!,
+      longitude!,
+      date,
+      time
+    );
+
+    const advice = getHuronAdvice(weatherRaw);
+
+    setData({
+      ...advice,
+      selectionLabel: time
+        ? `${date} • ${time}`
+        : `${date} • día completo`,
+    });
+  } catch (err) {
+    setError("No pudimos obtener el clima.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return { data, loading, error, runForecast };
 }
