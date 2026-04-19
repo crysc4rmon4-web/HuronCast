@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarDays, Clock3, Sparkles, MapPin } from "lucide-react";
 import { useWeather } from "../hooks/useWeather";
 import HuronDisplay from "./HuronDisplay";
-import { searchCity, type CityResult } from "../lib/geocoding";
+import { resolveCity, searchCity, type CityResult } from "../lib/geocoding";
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -28,6 +28,7 @@ export default function WeatherPlanner() {
   const [cityQuery, setCityQuery] = useState("");
   const [results, setResults] = useState<CityResult[]>([]);
   const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
+  const [cityError, setCityError] = useState<string | null>(null);
 
   const minDate = useMemo(() => toDateInputValue(new Date()), []);
   const maxDate = useMemo(() => toDateInputValue(addDays(new Date(), 16)), []);
@@ -35,24 +36,43 @@ export default function WeatherPlanner() {
   async function handleCitySearch(value: string) {
     setCityQuery(value);
     setSelectedCity(null);
+    setCityError(null);
 
-    if (value.trim().length < 2) {
+    const cleaned = value.trim();
+
+    if (cleaned.length < 2) {
       setResults([]);
       return;
     }
 
-    const res = await searchCity(value);
+    const res = await searchCity(cleaned);
     setResults(res);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setCityError(null);
+
+    let city = selectedCity;
+
+    if (!city && cityQuery.trim()) {
+      city = await resolveCity(cityQuery);
+
+      if (!city) {
+        setCityError(`No encontramos una ciudad válida para "${cityQuery}". Prueba con otro nombre o selecciónala desde la lista.`);
+        return;
+      }
+
+      setSelectedCity(city);
+      setCityQuery(`${city.name}, ${city.country}`);
+      setResults([]);
+    }
 
     await runForecast({
       date,
       time: time.trim() ? time : undefined,
-      lat: selectedCity?.latitude,
-      lon: selectedCity?.longitude,
+      lat: city?.latitude,
+      lon: city?.longitude,
     });
   }
 
@@ -135,6 +155,12 @@ export default function WeatherPlanner() {
                   className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
                 />
 
+                {cityError && (
+                  <p className="text-sm font-semibold text-red-200">
+                    {cityError}
+                  </p>
+                )}
+
                 {results.length > 0 && (
                   <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60">
                     {results.map((c) => (
@@ -145,6 +171,7 @@ export default function WeatherPlanner() {
                           setSelectedCity(c);
                           setCityQuery(`${c.name}, ${c.country}`);
                           setResults([]);
+                          setCityError(null);
                         }}
                         className="w-full border-b border-white/5 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/10 last:border-b-0"
                       >
