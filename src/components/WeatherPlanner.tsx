@@ -1,16 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Clock3, Sparkles, MapPin } from "lucide-react";
 import { useWeather } from "../hooks/useWeather";
 import HuronDisplay from "./HuronDisplay";
-import { resolveCity, searchCity, type CityResult } from "../lib/geocoding";
+import { searchCity, type CityResult } from "../lib/geocoding";
 
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function toTimeInputValue(date: Date) {
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  return `${hours}:${minutes}`;
 }
 
 function addDays(date: Date, days: number) {
@@ -24,14 +30,26 @@ export default function WeatherPlanner() {
 
   const today = useMemo(() => new Date(), []);
   const [date, setDate] = useState(toDateInputValue(today));
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState(toTimeInputValue(today));
   const [cityQuery, setCityQuery] = useState("");
   const [results, setResults] = useState<CityResult[]>([]);
   const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
 
+  const didAutoLoad = useRef(false);
+
   const minDate = useMemo(() => toDateInputValue(new Date()), []);
   const maxDate = useMemo(() => toDateInputValue(addDays(new Date(), 16)), []);
+
+  useEffect(() => {
+    if (didAutoLoad.current) return;
+    didAutoLoad.current = true;
+
+    void runForecast({
+      date: toDateInputValue(new Date()),
+      time: toTimeInputValue(new Date()),
+    });
+  }, [runForecast]);
 
   async function handleCitySearch(value: string) {
     setCityQuery(value);
@@ -56,10 +74,13 @@ export default function WeatherPlanner() {
     let city = selectedCity;
 
     if (!city && cityQuery.trim()) {
-      city = await resolveCity(cityQuery);
+      const res = await searchCity(cityQuery);
+      city = res[0] ?? null;
 
       if (!city) {
-        setCityError(`No encontramos una ciudad válida para "${cityQuery}". Prueba con otro nombre o selecciónala desde la lista.`);
+        setCityError(
+          `No encontramos una ciudad válida para "${cityQuery}". Prueba con otro nombre o selecciónala desde la lista.`
+        );
         return;
       }
 
@@ -93,7 +114,7 @@ export default function WeatherPlanner() {
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-          <div className="rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-lg">
+          <div className="order-2 rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-lg lg:order-1">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
                 <CalendarDays size={20} />
@@ -202,15 +223,18 @@ export default function WeatherPlanner() {
             </form>
           </div>
 
-          <div className="flex w-full justify-center">
+          <div className="order-1 flex w-full justify-center lg:order-2">
             {loading && (
               <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-[2rem] border border-white/15 bg-white/10 p-10 text-center shadow-2xl backdrop-blur-lg">
+                <span className="mb-3 inline-flex rounded-full border border-white/15 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
+                  Hoy ahora
+                </span>
                 <span className="mb-4 text-7xl">🦦</span>
                 <h3 className="text-2xl font-black">
-                  El hurón está analizando el clima...
+                  El hurón está mirando el cielo
                 </h3>
                 <p className="mt-2 text-sm text-white/70">
-                  Mirando temperatura, viento, lluvia y todo lo que hace falta para salir bien vestido.
+                  Calculando tu clima real y afinando el outfit correcto.
                 </p>
               </div>
             )}
