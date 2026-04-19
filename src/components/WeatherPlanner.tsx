@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { CalendarDays, Clock3, Sparkles, MapPin } from "lucide-react";
 import { useWeather } from "../hooks/useWeather";
 import HuronDisplay from "./HuronDisplay";
@@ -79,7 +80,7 @@ export default function WeatherPlanner() {
 
       if (!city) {
         setCityError(
-          `No encontramos una ciudad válida para "${cityQuery}". Prueba con otro nombre o selecciónala desde la lista.`
+          `No encontramos una ciudad válida para "${cityQuery}". Prueba con otro nombre o selecciónala de la lista.`
         );
         return;
       }
@@ -98,8 +99,8 @@ export default function WeatherPlanner() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-600 via-indigo-700 to-slate-900 px-4 py-8 text-white">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-700 via-blue-700 to-slate-950 px-4 py-6 text-white sm:py-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8">
         <header className="text-center">
           <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white/80">
             <Sparkles size={14} />
@@ -113,140 +114,225 @@ export default function WeatherPlanner() {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-          <div className="order-2 rounded-[2rem] border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-lg lg:order-1">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
-                <CalendarDays size={20} />
-              </div>
-              <div>
-                <h2 className="text-xl font-black">Planifica tu salida</h2>
-                <p className="text-sm text-white/65">
-                  La hora es opcional. Si la dejas vacía, usamos una lectura general del día.
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="block text-sm font-semibold text-white/85">
-                    Fecha
-                  </span>
-                  <input
-                    type="date"
-                    required
-                    value={date}
-                    min={minDate}
-                    max={maxDate}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
-                  />
-                </label>
-
-                <label className="space-y-2">
-                  <span className="block text-sm font-semibold text-white/85">
-                    Hora opcional
-                  </span>
-                  <div className="relative">
-                    <Clock3
-                      size={16}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
-                    />
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      className="w-full rounded-2xl border border-white/15 bg-white/10 py-3 pl-10 pr-4 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
-                    />
-                  </div>
-                </label>
-              </div>
-
-              <div className="space-y-2">
-                <span className="block text-sm font-semibold text-white/85">
-                  Ciudad (opcional)
-                </span>
-
-                <input
-                  type="text"
-                  placeholder="Ej: Madrid"
-                  value={cityQuery}
-                  onChange={(e) => handleCitySearch(e.target.value)}
-                  className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
-                />
-
-                {cityError && (
-                  <p className="text-sm font-semibold text-red-200">
-                    {cityError}
-                  </p>
-                )}
-
-                {results.length > 0 && (
-                  <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60">
-                    {results.map((c) => (
-                      <button
-                        key={`${c.name}-${c.latitude}-${c.longitude}`}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCity(c);
-                          setCityQuery(`${c.name}, ${c.country}`);
-                          setResults([]);
-                          setCityError(null);
-                        }}
-                        className="w-full border-b border-white/5 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/10 last:border-b-0"
-                      >
-                        {c.name}, {c.country}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm text-white/75">
-                <div className="flex items-start gap-3">
-                  <MapPin size={16} className="mt-0.5 shrink-0 text-white/70" />
-                  <p>
-                    Si no eliges ciudad, usamos tu ubicación del navegador. Si eliges una ciudad, el hurón trabaja con esa referencia.
+        <section className="overflow-hidden rounded-[2.5rem] border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl">
+          <div className="grid lg:grid-cols-[0.98fr_1.02fr]">
+            <div className="order-2 border-t border-white/10 bg-slate-950/10 p-5 sm:p-7 lg:order-1 lg:border-r lg:border-t-0">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
+                  <CalendarDays size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black">Planifica tu salida</h2>
+                  <p className="text-sm text-white/65">
+                    La hora es opcional. Si la dejas vacía, usamos una lectura general del día.
                   </p>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-5 py-3 font-black text-slate-950 shadow-lg transition hover:scale-[1.01] hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <Sparkles size={18} />
-                {loading ? "Calculando..." : "Ver outfit del hurón"}
-              </button>
-            </form>
-          </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="space-y-2">
+                    <span className="block text-sm font-semibold text-white/85">
+                      Fecha
+                    </span>
+                    <input
+                      type="date"
+                      required
+                      value={date}
+                      min={minDate}
+                      max={maxDate}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                    />
+                  </label>
 
-          <div className="order-1 flex w-full justify-center lg:order-2">
-            {loading && (
-              <div className="flex w-full max-w-lg flex-col items-center justify-center rounded-[2rem] border border-white/15 bg-white/10 p-10 text-center shadow-2xl backdrop-blur-lg">
-                <span className="mb-3 inline-flex rounded-full border border-white/15 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
-                  Hoy ahora
-                </span>
-                <span className="mb-4 text-7xl">🦦</span>
-                <h3 className="text-2xl font-black">
-                  El hurón está mirando el cielo
-                </h3>
-                <p className="mt-2 text-sm text-white/70">
-                  Calculando tu clima real y afinando el outfit correcto.
-                </p>
-              </div>
-            )}
+                  <label className="space-y-2">
+                    <span className="block text-sm font-semibold text-white/85">
+                      Hora opcional
+                    </span>
+                    <div className="relative">
+                      <Clock3
+                        size={16}
+                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/40"
+                      />
+                      <input
+                        type="time"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full rounded-2xl border border-white/15 bg-white/10 py-3 pl-10 pr-4 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                      />
+                    </div>
+                  </label>
+                </div>
 
-            {!loading && error && (
-              <div className="w-full max-w-lg rounded-[2rem] border border-red-400/30 bg-red-500/15 p-6 text-center shadow-2xl">
-                <h3 className="text-xl font-black">Algo se quedó a medias</h3>
-                <p className="mt-2 text-sm text-red-50/90">{error}</p>
-              </div>
-            )}
+                <div className="space-y-2">
+                  <span className="block text-sm font-semibold text-white/85">
+                    Ciudad (opcional)
+                  </span>
 
-            {!loading && !error && data && <HuronDisplay advice={data} />}
+                  <input
+                    type="text"
+                    placeholder="Ej: Madrid"
+                    value={cityQuery}
+                    onChange={(e) => handleCitySearch(e.target.value)}
+                    className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                  />
+
+                  {cityError && (
+                    <p className="text-sm font-semibold text-red-200">
+                      {cityError}
+                    </p>
+                  )}
+
+                  {results.length > 0 && (
+                    <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60">
+                      {results.map((c) => (
+                        <button
+                          key={`${c.name}-${c.latitude}-${c.longitude}`}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCity(c);
+                            setCityQuery(`${c.name}, ${c.country}`);
+                            setResults([]);
+                            setCityError(null);
+                          }}
+                          className="w-full border-b border-white/5 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/10 last:border-b-0"
+                        >
+                          {c.name}, {c.country}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm text-white/75">
+                  <div className="flex items-start gap-3">
+                    <MapPin size={16} className="mt-0.5 shrink-0 text-white/70" />
+                    <p>
+                      Si no eliges ciudad, usamos tu ubicación del navegador. Si eliges una ciudad, el hurón trabaja con esa referencia.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-5 py-3 font-black text-slate-950 shadow-lg transition hover:scale-[1.01] hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <Sparkles size={18} />
+                  {loading ? "Calculando..." : "Ver outfit del hurón"}
+                </button>
+              </form>
+            </div>
+
+            <div className="order-1 border-b border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-4 sm:p-6 lg:order-2 lg:border-b-0">
+              {loading && (
+                <div className="relative flex min-h-[440px] flex-col overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-xl">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_55%)]" />
+                  <div className="relative flex items-center justify-between">
+                    <span className="rounded-full border border-white/15 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
+                      Hoy ahora
+                    </span>
+                    <span className="rounded-full bg-black/15 px-3 py-1 text-[11px] font-semibold text-white/70">
+                      HuronCast
+                    </span>
+                  </div>
+
+                  <div className="relative flex flex-1 items-center justify-center py-6">
+                    <div className="relative h-[300px] w-full max-w-[360px]">
+                      <Image
+                        src="/huron/loading-huron.png"
+                        alt="El hurón está mirando el cielo"
+                        fill
+                        priority
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-contain p-4"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative rounded-[1.5rem] border border-white/10 bg-white/10 p-4">
+                    <p className="text-sm font-black text-white">
+                      El hurón está mirando el cielo
+                    </p>
+                    <p className="mt-1 text-sm text-white/75">
+                      Calculando clima real y afinando tu outfit.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!loading && error && (
+                <div className="relative flex min-h-[440px] flex-col overflow-hidden rounded-[2rem] border border-red-400/30 bg-red-500/15 p-5 shadow-xl">
+                  <div className="relative flex items-center justify-between">
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
+                      Oops
+                    </span>
+                    <span className="rounded-full bg-black/15 px-3 py-1 text-[11px] font-semibold text-white/70">
+                      HuronCast
+                    </span>
+                  </div>
+
+                  <div className="relative flex flex-1 items-center justify-center py-6">
+                    <div className="relative h-[300px] w-full max-w-[360px]">
+                      <Image
+                        src="/huron/home-hero.png"
+                        alt="HuronCast"
+                        fill
+                        priority
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-contain p-4"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative rounded-[1.5rem] border border-white/10 bg-white/10 p-4">
+                    <p className="text-sm font-black text-white">
+                      Algo se quedó a medias
+                    </p>
+                    <p className="mt-1 text-sm text-red-50/90">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {!loading && !error && data && <HuronDisplay advice={data} />}
+
+              {!loading && !error && !data && (
+                <div className="relative flex min-h-[440px] flex-col overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-xl">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_55%)]" />
+                  <div className="relative flex items-center justify-between">
+                    <span className="rounded-full border border-white/15 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
+                      Listo
+                    </span>
+                    <span className="rounded-full bg-black/15 px-3 py-1 text-[11px] font-semibold text-white/70">
+                      HuronCast
+                    </span>
+                  </div>
+
+                  <div className="relative flex flex-1 items-center justify-center py-6">
+                    <div className="relative h-[300px] w-full max-w-[360px]">
+                      <Image
+                        src="/huron/home-hero.png"
+                        alt="HuronCast home hero"
+                        fill
+                        priority
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-contain p-4"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative rounded-[1.5rem] border border-white/10 bg-white/10 p-4">
+                    <p className="text-sm font-black text-white">
+                      El hurón está listo para decidir
+                    </p>
+                    <p className="mt-1 text-sm text-white/75">
+                      Elige fecha, hora o ciudad y te devuelve una respuesta clara al instante.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
