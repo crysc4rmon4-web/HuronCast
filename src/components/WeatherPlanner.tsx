@@ -26,12 +26,16 @@ function addDays(date: Date, days: number) {
   return copy;
 }
 
+type ForecastMode = "full-day" | "exact-time";
+
 export default function WeatherPlanner() {
   const { data, loading, error, runForecast } = useWeather();
 
   const today = useMemo(() => new Date(), []);
   const [date, setDate] = useState(toDateInputValue(today));
   const [time, setTime] = useState(toTimeInputValue(today));
+  const [mode, setMode] = useState<ForecastMode>("full-day");
+
   const [cityQuery, setCityQuery] = useState("");
   const [results, setResults] = useState<CityResult[]>([]);
   const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
@@ -48,7 +52,6 @@ export default function WeatherPlanner() {
 
     void runForecast({
       date: toDateInputValue(new Date()),
-      time: toTimeInputValue(new Date()),
     });
   }, [runForecast]);
 
@@ -92,7 +95,7 @@ export default function WeatherPlanner() {
 
     await runForecast({
       date,
-      time: time.trim() ? time : undefined,
+      time: mode === "exact-time" && time.trim() ? time : undefined,
       lat: city?.latitude,
       lon: city?.longitude,
     });
@@ -110,13 +113,13 @@ export default function WeatherPlanner() {
             ¿Qué me pongo hoy?
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-blue-100/75 sm:text-base">
-            Elige fecha, hora y ciudad. El hurón te devuelve una recomendación clara, divertida y basada en clima real.
+            Elige fecha, modo y ciudad. El hurón te devuelve una recomendación clara, divertida y basada en clima real.
           </p>
         </header>
 
         <section className="overflow-hidden rounded-[2.5rem] border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl">
           <div className="grid lg:grid-cols-[0.98fr_1.02fr]">
-            <div className="order-2 border-t border-white/10 bg-slate-950/10 p-5 sm:p-7 lg:order-1 lg:border-r lg:border-t-0">
+            <div className="order-2 bg-slate-950/10 p-5 sm:p-7 lg:order-1">
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
                   <CalendarDays size={20} />
@@ -124,7 +127,7 @@ export default function WeatherPlanner() {
                 <div>
                   <h2 className="text-xl font-black">Planifica tu salida</h2>
                   <p className="text-sm text-white/65">
-                    La hora es opcional. Si la dejas vacía, usamos una lectura general del día.
+                    Día completo por defecto. Si quieres precisión, activas hora exacta.
                   </p>
                 </div>
               </div>
@@ -142,13 +145,48 @@ export default function WeatherPlanner() {
                       min={minDate}
                       max={maxDate}
                       onChange={(e) => setDate(e.target.value)}
-                      className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                      className="w-full appearance-none rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
                     />
                   </label>
 
+                  <div className="space-y-2">
+                    <span className="block text-sm font-semibold text-white/85">
+                      Modo de tiempo
+                    </span>
+
+                    <div className="grid grid-cols-2 rounded-2xl border border-white/15 bg-white/10 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setMode("full-day")}
+                        className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
+                          mode === "full-day"
+                            ? "bg-yellow-400 text-slate-950 shadow-lg"
+                            : "text-white/75 hover:bg-white/10"
+                        }`}
+                        aria-pressed={mode === "full-day"}
+                      >
+                        Día completo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode("exact-time")}
+                        className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
+                          mode === "exact-time"
+                            ? "bg-yellow-400 text-slate-950 shadow-lg"
+                            : "text-white/75 hover:bg-white/10"
+                        }`}
+                        aria-pressed={mode === "exact-time"}
+                      >
+                        Hora exacta
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {mode === "exact-time" ? (
                   <label className="space-y-2">
                     <span className="block text-sm font-semibold text-white/85">
-                      Hora opcional
+                      Hora
                     </span>
                     <div className="relative">
                       <Clock3
@@ -159,11 +197,20 @@ export default function WeatherPlanner() {
                         type="time"
                         value={time}
                         onChange={(e) => setTime(e.target.value)}
-                        className="w-full rounded-2xl border border-white/15 bg-white/10 py-3 pl-10 pr-4 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                        className="w-full appearance-none rounded-2xl border border-white/15 bg-white/10 py-3 pl-10 pr-4 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
                       />
                     </div>
                   </label>
-                </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm text-white/75">
+                    <div className="flex items-start gap-3">
+                      <Clock3 size={16} className="mt-0.5 shrink-0 text-white/70" />
+                      <p>
+                        Estás en modo día completo. El hurón leerá el promedio del día y no una hora concreta.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <span className="block text-sm font-semibold text-white/85">
@@ -185,7 +232,7 @@ export default function WeatherPlanner() {
                   )}
 
                   {results.length > 0 && (
-                    <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60">
+                    <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/60 backdrop-blur-xl">
                       {results.map((c) => (
                         <button
                           key={`${c.name}-${c.latitude}-${c.longitude}`}
@@ -239,7 +286,7 @@ export default function WeatherPlanner() {
                   </div>
 
                   <div className="relative flex flex-1 items-center justify-center py-6">
-                    <div className="relative h-[300px] w-full max-w-[360px]">
+                    <div className="relative h-[300px] w-full max-w-[380px]">
                       <Image
                         src="/huron/loading-huron.png"
                         alt="El hurón está mirando el cielo"
@@ -274,7 +321,7 @@ export default function WeatherPlanner() {
                   </div>
 
                   <div className="relative flex flex-1 items-center justify-center py-6">
-                    <div className="relative h-[300px] w-full max-w-[360px]">
+                    <div className="relative h-[300px] w-full max-w-[380px]">
                       <Image
                         src="/huron/home-hero.png"
                         alt="HuronCast"
@@ -310,7 +357,7 @@ export default function WeatherPlanner() {
                   </div>
 
                   <div className="relative flex flex-1 items-center justify-center py-6">
-                    <div className="relative h-[300px] w-full max-w-[360px]">
+                    <div className="relative h-[300px] w-full max-w-[380px]">
                       <Image
                         src="/huron/home-hero.png"
                         alt="HuronCast home hero"
@@ -327,7 +374,7 @@ export default function WeatherPlanner() {
                       El hurón está listo para decidir
                     </p>
                     <p className="mt-1 text-sm text-white/75">
-                      Elige fecha, hora o ciudad y te devuelve una respuesta clara al instante.
+                      Elige fecha, modo o ciudad y te devuelve una respuesta clara al instante.
                     </p>
                   </div>
                 </div>
