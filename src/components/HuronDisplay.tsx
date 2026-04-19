@@ -1,8 +1,15 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { Info, Droplets, SunMedium, Thermometer, Wind } from "lucide-react";
+import {
+  Info,
+  Droplets,
+  SunMedium,
+  Thermometer,
+  Wind,
+} from "lucide-react";
 import { HuronResponse } from "../lib/engine";
+import ShareButton from "./ShareButton";
 
 export default function HuronDisplay({ advice }: { advice: HuronResponse }) {
   const huronVariants: Variants = {
@@ -80,7 +87,7 @@ export default function HuronDisplay({ advice }: { advice: HuronResponse }) {
           🦦
         </motion.div>
 
-        <div className="text-center space-y-4">
+        <div className="space-y-4 text-center">
           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white">
             {advice.label}
           </span>
@@ -92,6 +99,8 @@ export default function HuronDisplay({ advice }: { advice: HuronResponse }) {
           <div className="inline-flex items-center gap-2 rounded-2xl bg-yellow-400 px-5 py-2 text-sm font-black text-blue-950 shadow-lg">
             👔 {advice.outfit}
           </div>
+
+          <ShareButton advice={advice} />
         </div>
 
         <div className="mt-8 grid w-full grid-cols-2 gap-3 sm:grid-cols-3">
