@@ -96,14 +96,17 @@ export default function WeatherPlanner() {
     e.preventDefault();
     setCityError(null);
 
+    // 1. Declaramos la variable permitiendo que sea objeto o nulo
     let city: CityResult | null = selectedCity;
 
-    // Si no hay ciudad seleccionada pero hay texto, intentamos pillar la primera opción
     if (!city && cityQuery.trim()) {
       const res = await searchCity(cityQuery);
-      
-      // CORRECCIÓN BLINDADA: Comprobamos explícitamente la longitud del array
-      city = (res && res.length > 0) ? res : null;
+
+      // 2. CORRECCIÓN PROFESIONAL:
+      // res es CityResult[] (una lista).
+      // city necesita ser CityResult (un solo item).
+      // Accedemos al índice para extraer el objeto de la lista.
+      city = (res && res.length > 0) ? res[0] : null;
 
       if (!city) {
         setCityError(
@@ -117,6 +120,7 @@ export default function WeatherPlanner() {
       setResults([]);
     }
 
+    // 3. Al pasar los datos, usamos encadenamiento opcional city?. para mayor seguridad
     await runForecast({
       date,
       time: mode === "exact-time" && time.trim() ? time : undefined,
@@ -124,7 +128,6 @@ export default function WeatherPlanner() {
       lon: city?.longitude,
     });
   }
-
   return (
     <main className="min-h-screen bg-gradient-to-br from-indigo-700 via-blue-700 to-slate-950 px-4 py-6 text-white sm:py-10">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8">
