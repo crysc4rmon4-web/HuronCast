@@ -36,16 +36,19 @@ export default function WeatherPlanner() {
   const [time, setTime] = useState(toTimeInputValue(today));
   const [mode, setMode] = useState<ForecastMode>("full-day");
 
+  // Estados para búsqueda y debounce
   const [cityQuery, setCityQuery] = useState("");
   const [results, setResults] = useState<CityResult[]>([]);
   const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
   const [cityError, setCityError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const didAutoLoad = useRef(false);
 
   const minDate = useMemo(() => toDateInputValue(new Date()), []);
   const maxDate = useMemo(() => toDateInputValue(addDays(new Date(), 16)), []);
 
+  // 1. Carga inicial automática
   useEffect(() => {
     if (didAutoLoad.current) return;
     didAutoLoad.current = true;
@@ -55,31 +58,52 @@ export default function WeatherPlanner() {
     });
   }, [runForecast]);
 
-  async function handleCitySearch(value: string) {
-    setCityQuery(value);
-    setSelectedCity(null);
-    setCityError(null);
-
-    const cleaned = value.trim();
-
-    if (cleaned.length < 2) {
+  // 2. Lógica de DEBOUNCE para búsqueda de ciudad
+  useEffect(() => {
+    // Si el query es corto o ya seleccionamos esta ciudad, no busques
+    const cleaned = cityQuery.trim();
+    if (cleaned.length < 2 || (selectedCity && cleaned === `${selectedCity.name}, ${selectedCity.country}`)) {
       setResults([]);
       return;
     }
 
-    const res = await searchCity(cleaned);
-    setResults(res);
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await searchCity(cleaned);
+        setResults(res);
+      } catch (err) {
+        console.error("Error buscando ciudad:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400); // 400ms de espera
+
+    return () => clearTimeout(timer);
+  }, [cityQuery, selectedCity]);
+
+  // Manejador del cambio en el input
+  function handleInputChange(value: string) {
+    setCityQuery(value);
+    setCityError(null);
+    // Si el usuario borra o cambia el texto, quitamos la selección previa para permitir nueva búsqueda
+    if (selectedCity && value !== `${selectedCity.name}, ${selectedCity.country}`) {
+      setSelectedCity(null);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setCityError(null);
 
-    let city = selectedCity;
+    let city: CityResult | null = selectedCity;
 
+    // Si no hay ciudad seleccionada pero hay texto, intentamos pillar la primera opción
     if (!city && cityQuery.trim()) {
       const res = await searchCity(cityQuery);
-      city = res[0] ?? null;
+      
+      // CORRECCIÓN BLINDADA: Comprobamos explícitamente la longitud del array
+      city = (res && res.length > 0) ? res : null;
 
       if (!city) {
         setCityError(
@@ -217,13 +241,20 @@ export default function WeatherPlanner() {
                     Ciudad (opcional)
                   </span>
 
-                  <input
-                    type="text"
-                    placeholder="Ej: Madrid"
-                    value={cityQuery}
-                    onChange={(e) => handleCitySearch(e.target.value)}
-                    className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Ej: Madrid"
+                      value={cityQuery}
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-white/40 focus:border-white/30 focus:bg-white/15"
+                    />
+                    {isSearching && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                      </div>
+                    )}
+                  </div>
 
                   {cityError && (
                     <p className="text-sm font-semibold text-red-200">
