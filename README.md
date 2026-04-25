@@ -1,38 +1,45 @@
 # 🦦 HuronCast: AI-Driven Weather & Outfit Optimizer
 
-HuronCast es un motor de decisiones optimizado. Transforma datos climáticos complejos en una recomendación de vestuario inmediata, clara y con fricción cero. Construida con un enfoque estricto en el rendimiento (Performance) y código limpio.
+HuronCast es un motor de decisiones optimizado que transforma datos climáticos técnicos en recomendaciones de vestuario inmediatas y claras. Construida bajo un estándar de ingeniería de alto rendimiento y código limpio.
+
+**[🚀 Ver App en Vivo](https://huron-cast.vercel.app/)**
 
 ---
 
-## 📸 Interfaz y Rendimiento
+## 📸 UI & Verified Production Performance
 
-![HuronCast Desktop UI](./docs/desktop-ui.png)
+HuronCast ha sido diseñada con un enfoque **mobile-first**, garantizando una experiencia de usuario instantánea e intuitiva desde cualquier dispositivo.
 
-![PageSpeed Insights Score: 100 Performance](./docs/pagespeed-100.png)
+| Vista de la App | Rendimiento en Producción (Vercel) |
+| :---: | :---: |
+| ![HuronCast Mobile UI](./docs/mobile-ui.png) | ![PageSpeed Production Score](./docs/speed-results.png) |
+
+> La excelencia técnica está verificada por Google PageSpeed Insights en producción, logrando puntuaciones **perfectas de 100/100 en Accesibilidad y SEO**, y un sólido **94/100 en Rendimiento móvil**.
 
 ---
 
 ## 🚀 Performance & Engineering Excellence
 
-Mientras la industria se conforma con tiempos de carga promedios, HuronCast opera en la excelencia técnica:
-* **Performance Score:** **100/100** en Rendimiento certificado por Google PageSpeed Insights.
-* **Type Safety:** Arquitectura 100% TypeScript con tipado estricto.
-* **Data Integrity:** Validación de esquemas con **Zod** para asegurar que las respuestas del backend y geocoding sean seguras y exactas, evitando caídas en producción.
-* **Eficiencia de API:** Implementación de **Debounce** (400ms) en la búsqueda asíncrona de ciudades para minimizar peticiones innecesarias al servidor.
+Mientras la industria se conforma con tiempos de carga promedio, HuronCast opera en la excelencia técnica para ofrecer fricción cero:
+
+* **Full Green Score:** Optimización máxima de Core Web Vitals certificada.
+* **Type Safety:** Arquitectura 100% TypeScript con tipado estricto para un desarrollo robusto.
+* **Data Integrity:** Validación de esquemas con **Zod**, asegurando que cada dato de la API sea íntegro antes de procesarlo.
+* **Smart Fetching:** Implementación de **Debounce** (400ms) en la búsqueda de ciudades para optimizar el consumo de recursos.
 
 ## 🧠 Core Features
 
-* **Localización Inteligente:** Detecta automáticamente la ubicación del usuario vía navegador o permite búsquedas manuales globales precisas.
-* **Modos de Precisión:** Predicción de "Día Completo" (promedio) o "Hora Exacta" para una planificación total.
-* **UX Minimalista:** Interfaz fluida sin ruido visual, diseñada puramente para resolver el problema: *¿Qué me pongo hoy?*
+* **Localización Inteligente:** Detección automática vía navegador o búsqueda manual global precisa.
+* **Modos de Precisión:** Predicciones de "Día Completo" o "Hora Exacta" para una planificación total.
+* **UX Minimalista:** Interfaz fluida y funcional, diseñada para responder una sola pregunta: *¿Qué me pongo hoy?* 
 
 ## 🛠️ Tech Stack
 
 * **Framework:** Next.js 14 (App Router)
 * **Lenguaje:** TypeScript
-* **Estilos:** Tailwind CSS
 * **Validación:** Zod
-* **Iconografía:** Lucide React
+* **Estilos:** Tailwind CSS
+* **Despliegue:** Vercel
 
 ---
 
@@ -40,4 +47,4 @@ Mientras la industria se conforma con tiempos de carga promedios, HuronCast oper
 
 **Built by Crys C4rmon4 Studio**
 *Fullstack Developer | AI-Driven Systems*
-> Diseñando herramientas eficientes, escalables y orientadas a resultados.
+> "Diseñando herramientas eficientes, escalables y orientadas a resultados que solucionan problemas reales".
